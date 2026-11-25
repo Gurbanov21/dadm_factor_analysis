@@ -1,0 +1,17 @@
+/*-- scss:defaults --*/
+// Calm, projector-friendly colours: light blue-grey background, navy headings
+$body-bg: #eef2f7;
+$body-color: #1f2933;
+$link-color: #1d4e89;
+$presentation-heading-color: #1d4e89;
+$code-block-bg: #ffffff;
+
+/*-- scss:rules --*/
+.reveal h2 {
+  border-bottom: 3px solid #d9a441;
+  padding-bottom: 0.15em;
+}
+.reveal .slide table th { color: #1d4e89; }
+.reveal pre code { max-height: 560px; }
+// Keep the reference list on one slide (also in the PDF)
+.reveal #refs { font-size: 0.85em; }

@@ -1,0 +1,225 @@
+---
+title: "Factor Analysis for Business Decision-Making Using R"
+subtitle: "Data Analysis for Decision-Making (WS 2026) · Prof. Dr. Stephan Huber"
+author:
+  - name: "Amal Gurbanov (Matr. Nr. 401491824)"
+    email: gurbanov.amal@stud.hs-fresenius.de
+    affiliations: Fresenius University of Applied Science
+date: 2026-12-16
+date-format: long
+format:
+  revealjs:
+    embed-resources: true
+    slide-number: true
+    auto-stretch: false
+    theme: [simple, custom.scss]
+    width: 1280
+    height: 720
+    code-line-numbers: false
+    pdf-separate-fragments: false
+execute:
+  echo: true
+  warning: false
+  message: false
+bibliography: references.bib
+csl: _extensions/wjschne/apaquarto/apa.csl
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(psych)
+library(ggplot2)
+survey <- read.csv("data/customer_survey.csv")
+items  <- survey[, 1:12]
+```
+
+## The business problem
+
+An online shop asks **400 customers** to rate **12 statements** (1 = strongly disagree … 7 = strongly agree):
+
+| Product | Service | Price |
+|---|---|---|
+| quality, durability, design, variety | delivery, support, returns, communication | price fair, discounts, value, cheaper than rivals |
+
+. . .
+
+**Question for management:** Which *few* things really drive customer satisfaction, and where should we invest?
+
+Twelve questions → twelve decisions? **No.** We need fewer, meaningful dimensions.
+
+::: notes
+Start with the story: a company collects survey data but cannot act on twelve separate numbers. Factor analysis is the tool that reduces them to a few ideas. Note: the data are simulated for teaching, so we know the true structure.
+:::
+
+## What is factor analysis?
+
+- Many observed variables are explained by a few hidden **latent factors** [@Hair2019Multivariate; @Spearman1904General]
+
+$$
+x_j = \lambda_{j1}F_1 + \dots + \lambda_{jm}F_m + \varepsilon_j
+$$
+
+- $\lambda$ = **loading**: how strongly an item belongs to a factor
+- **EFA vs. PCA:** PCA summarises *all* variance; EFA models only the *shared* variance [@Fabrigar1999Evaluating]
+
+::: notes
+Explain loading as "correlation between item and factor". Communality h2 = share of an item explained by the factors. The idea goes back to Spearman (1904), who explained school grades with one general intelligence factor.
+:::
+
+## Workflow in six steps
+
+1. **Check data**: same scale, n ≥ 100–200
+2. **Suitability**: KMO > 0.6, Bartlett's test significant
+3. **How many factors?** Parallel analysis [@Horn1965Rationale]
+4. **Extract & rotate**: ML + oblimin (factors may correlate)
+5. **Interpret & name** the factors (loadings > 0.4)
+6. **Use** the results: reliability, factor scores → decisions
+
+All with one package: `psych` [@Revelle2026psych]
+
+## Step 1–2: Is the data suitable?
+
+```{r}
+library(psych)
+survey <- read.csv("data/customer_survey.csv")
+items  <- survey[, 1:12]          # the 12 rating items
+
+KMO(items)$MSA                    # > 0.6 is acceptable
+cortest.bartlett(cor(items), n = nrow(items))$p.value
+```
+
+✅ KMO ≈ 0.79 (good) and Bartlett's *p* < .001 → items are correlated enough.
+
+::: notes
+KMO compares correlations with partial correlations. Bartlett tests whether the correlation matrix is different from an identity matrix (no correlations). Both are fine here.
+:::
+
+## Step 3: How many factors?
+
+```{r}
+#| fig-height: 3.3
+#| fig-width: 9
+set.seed(1)
+pa <- fa.parallel(items, fa = "fa", main = "Parallel analysis")
+```
+
+Keep factors whose eigenvalue is **above the random-data line** → **3 factors**.
+
+::: notes
+Parallel analysis compares our eigenvalues with eigenvalues from random data of the same size. The Kaiser rule (eigenvalue > 1) often gives too many factors. The scree plot "elbow" is another visual help.
+:::
+
+## Step 4: Extract and rotate
+
+```{r}
+fit <- fa(items, nfactors = 3, rotate = "oblimin", fm = "ml")
+L <- unclass(fa.sort(fit)$loadings)       # sorted loadings
+L[abs(L) < 0.3] <- NA                     # hide small loadings
+print(round(L, 2), na.print = "")
+```
+
+::: notes
+fm = "ml" is maximum likelihood. Oblimin is an oblique rotation: it allows factors to correlate, which is realistic in business. Every item loads on exactly one factor - a clean structure.
+:::
+
+## Step 5: Interpret and name
+
+```{r}
+#| echo: false
+#| fig-height: 4.4
+#| fig-width: 8
+#| out-width: "64%"
+Ld <- as.data.frame(as.table(unclass(fit$loadings)))
+names(Ld) <- c("item", "factor", "loading")
+Ld$factor <- factor(Ld$factor, levels = c("ML2", "ML3", "ML1"),
+                    labels = c("ML2 = Product", "ML3 = Service", "ML1 = Price"))
+Ld$item <- factor(Ld$item, levels = rev(colnames(items)))
+ggplot(Ld, aes(factor, item, fill = loading)) +
+  geom_tile(colour = "white") +
+  geom_text(aes(label = sprintf("%.2f", loading)), size = 4.6) +
+  scale_fill_gradient2(low = "#c0504d", mid = "white", high = "#1d4e89", limits = c(-1, 1)) +
+  labs(x = NULL, y = NULL, fill = "Loading") +
+  theme_minimal(base_size = 16) +
+  theme(plot.background = element_rect(fill = "#eef2f7", colour = NA),
+        panel.grid = element_blank())
+```
+
+Each item loads strongly on **one** factor only → a clean, easy-to-name structure.
+
+## Step 6: From factors to a decision
+
+```{r}
+scores <- as.data.frame(fit$scores)
+names_map <- c(ML1 = "Price", ML2 = "Product", ML3 = "Service")  # from step 5
+colnames(scores) <- names_map[colnames(scores)]
+model <- lm(survey$satisfaction ~ Product + Service + Price, data = scores)
+round(summary(model)$coefficients, 3)
+```
+
+. . .
+
+**Decision:** Service has the largest effect on satisfaction → invest in **delivery, support, and returns**, not in further price cuts.
+
+::: notes
+Factor scores give every customer one value per factor. Regressing satisfaction on them shows which driver matters most. This is how factor analysis supports business decisions. The scores could also be used for customer segmentation (cluster analysis).
+:::
+
+## Where is it used in business?
+
+- **Marketing:** drivers of satisfaction, SERVQUAL [@Parasuraman1988SERVQUAL]
+- **HR:** employee engagement surveys
+- **Finance:** common risk factors behind stock returns
+
+**Pitfalls**
+
+- Bad questions → bad factors
+- Not only "eigenvalue > 1" [@Costello2005Best]
+- Names are interpretations → confirm with CFA
+
+## Exercise (≈ 15 minutes)
+
+The data set `bfi` in `psych` contains **25 personality items** from 2,800 people [@Goldberg1999Broad].
+
+```{r}
+#| eval: false
+library(psych)
+big5 <- bfi[, 1:25]
+```
+
+1. Check suitability with `KMO()` and `cortest.bartlett()`.
+2. Use `fa.parallel()`: how many factors are suggested?
+3. Run `fa()` with **5 factors**, `rotate = "oblimin"`.
+4. Which items load on which factor? Name the factors (look at `?bfi`).
+5. **Business question:** How could an HR department use these factors?
+
+::: notes
+Give students time. Walk around and help. Hint: bfi has missing values; fa() handles them by default (pairwise correlations).
+:::
+
+## Exercise: solution
+
+```{r}
+big5 <- bfi[, 1:25]
+KMO(big5)$MSA
+cortest.bartlett(cor(big5, use = "pairwise"), n = nrow(big5))$p.value
+f5 <- fa(big5, nfactors = 5, rotate = "oblimin")
+L5 <- unclass(f5$loadings)
+apply(L5, 2, function(x) paste(rownames(L5)[abs(x) > 0.4], collapse = ", "))
+```
+
+**Big Five:** Neuroticism, Conscientiousness, Extraversion, Agreeableness, Openness. Parallel analysis says 6, **theory** says 5.
+
+## Key takeaways
+
+- Factor analysis turns **many correlated variables** into **a few meaningful factors**
+- In R: `KMO()` → `fa.parallel()` → `fa()` → name → use scores
+- The analyst makes decisions: number of factors, rotation, names; **report them**
+- Business value: focus on the **drivers that matter**
+
+**Handout, slides, and code:** see the GitHub repository of this project.
+
+## References
+
+::: {#refs}
+:::
