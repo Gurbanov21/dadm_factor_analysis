@@ -18,7 +18,7 @@ date-format: long
 abstract: "Business surveys often contain many questions that measure only a few underlying ideas, such as product quality, service, or price. Exploratory factor analysis (EFA) reduces many correlated variables to a small number of latent factors that managers can interpret and act upon. This handout complements my presentation. It explains the factor model, gives a step-by-step workflow in R with the psych package, and applies it to a simulated customer satisfaction survey of an online retailer. The analysis identifies three drivers of satisfaction and shows how factor scores can guide decisions about where to invest. The handout closes with common pitfalls and resources for further study."
 keywords: [exploratory factor analysis, R, psych, customer satisfaction, dimension reduction]
 
-affidavit-place: "[Place]"
+affidavit-place: "Cologne"
 
 format:
   apaquarto-pdf:
