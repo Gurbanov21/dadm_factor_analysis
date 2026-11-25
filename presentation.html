@@ -1505,8 +1505,9 @@ display:block!important;
 <h2>Exercise (≈ 15 minutes)</h2>
 <p>The data set <code>bfi</code> in <code>psych</code> contains <strong>25 personality items</strong> from 2,800 people <span class="citation" data-cites="Goldberg1999Broad">(<a href="#/references" role="doc-biblioref" onclick>Goldberg, 1999</a>)</span>.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(psych)</span>
-<span id="cb11-2"><a href aria-hidden="true" tabindex="-1"></a>big5 <span class="ot">&lt;-</span> bfi[, <span class="dv">1</span><span class="sc">:</span><span class="dv">25</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">&quot;psych&quot;</span>, <span class="st">&quot;GPArotation&quot;</span>))   <span class="co"># only once</span></span>
+<span id="cb11-2"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(psych)</span>
+<span id="cb11-3"><a href aria-hidden="true" tabindex="-1"></a>big5 <span class="ot">&lt;-</span> bfi[, <span class="dv">1</span><span class="sc">:</span><span class="dv">25</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <ol type="1">
 <li>Check suitability with <code>KMO()</code> and <code>cortest.bartlett()</code>.</li>

@@ -188,6 +188,7 @@ The data set `bfi` in `psych` contains **25 personality items** from 2,800 peopl
 
 ```{r}
 #| eval: false
+install.packages(c("psych", "GPArotation"))   # only once
 library(psych)
 big5 <- bfi[, 1:25]
 ```
