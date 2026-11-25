@@ -56,11 +56,11 @@ Start with the story: a company collects survey data but cannot act on twelve se
 
 - Many observed variables are explained by a few hidden **latent factors** [@Hair2019Multivariate; @Spearman1904General]
 
-$$
-x_j = \lambda_{j1}F_1 + \dots + \lambda_{jm}F_m + \varepsilon_j
-$$
+::: {style="text-align:center; font-size:1.2em;"}
+*x*~j~ = λ~j1~ *F*~1~ + … + λ~jm~ *F*~m~ + ε~j~
+:::
 
-- $\lambda$ = **loading**: how strongly an item belongs to a factor
+- λ = **loading**: how strongly an item belongs to a factor
 - **EFA vs. PCA:** PCA summarises *all* variance; EFA models only the *shared* variance [@Fabrigar1999Evaluating]
 
 ::: notes
@@ -130,10 +130,13 @@ fm = "ml" is maximum likelihood. Oblimin is an oblique rotation: it allows facto
 #| fig-height: 4.4
 #| fig-width: 8
 #| out-width: "64%"
-Ld <- as.data.frame(as.table(unclass(fit$loadings)))
+L <- unclass(fit$loadings)
+markers <- c(Product = "quality", Service = "support", Price = "price_fair")
+fac_name <- names(markers)[apply(abs(L[markers, ]), 2, which.max)]
+names(fac_name) <- colnames(L)
+Ld <- as.data.frame(as.table(L))
 names(Ld) <- c("item", "factor", "loading")
-Ld$factor <- factor(Ld$factor, levels = c("ML2", "ML3", "ML1"),
-                    labels = c("ML2 = Product", "ML3 = Service", "ML1 = Price"))
+Ld$factor <- factor(fac_name[as.character(Ld$factor)], levels = names(markers))
 Ld$item <- factor(Ld$item, levels = rev(colnames(items)))
 ggplot(Ld, aes(factor, item, fill = loading)) +
   geom_tile(colour = "white") +
@@ -150,9 +153,11 @@ Each item loads strongly on **one** factor only → a clean, easy-to-name struct
 ## Step 6: From factors to a decision
 
 ```{r}
+L <- unclass(fit$loadings)
+markers <- c(Product = "quality", Service = "support", Price = "price_fair")
 scores <- as.data.frame(fit$scores)
-names_map <- c(ML1 = "Price", ML2 = "Product", ML3 = "Service")  # from step 5
-colnames(scores) <- names_map[colnames(scores)]
+# name each factor after its clearest item (step 5)
+colnames(scores) <- names(markers)[apply(abs(L[markers, colnames(scores)]), 2, which.max)]
 model <- lm(survey$satisfaction ~ Product + Service + Price, data = scores)
 round(summary(model)$coefficients, 3)
 ```

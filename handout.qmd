@@ -189,8 +189,12 @@ print(fit$loadings, cutoff = 0.30, sort = TRUE)
 alpha(items[, 1:4])   # Product
 alpha(items[, 5:8])   # Service
 alpha(items[, 9:12])  # Price
+# name each factor after its clearest item (labels ML1-ML3 can change)
+L <- unclass(fit$loadings)
+markers <- c(Product = "quality", Service = "support", Price = "price_fair")
 scores <- as.data.frame(fit$scores)
-summary(lm(survey$satisfaction ~ ., data = scores))
+colnames(scores) <- names(markers)[apply(abs(L[markers, colnames(scores)]), 2, which.max)]
+summary(lm(survey$satisfaction ~ Product + Service + Price, data = scores))
 ```
 
 {{< pagebreak >}}
