@@ -654,6 +654,7 @@ ul.task-list li input[type="checkbox"] {
 width: 0.8em;
 margin: 0 0.8em 0.2em -1em;  vertical-align: middle;
 }
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
 
 html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
@@ -1262,7 +1263,7 @@ Amal Gurbanov (Matr. Nr. 401491824)
 </section>
 <section id="the-business-problem" class="slide level2">
 <h2>The business problem</h2>
-<p>An online shop asks <strong>400 customers</strong> to rate <strong>12 statements</strong> (1 = strongly disagree … 7 = strongly agree):</p>
+<p>An online shop asks <strong>400 customers</strong> to rate <strong>12 statements</strong> (1 = strongly disagree … 7 = strongly agree). <em>Data are simulated for teaching.</em></p>
 <table class="caption-top">
 <colgroup>
 <col style="width: 33%">
@@ -1315,7 +1316,7 @@ display:block!important;
 <li><strong>EFA vs. PCA:</strong> PCA summarises <em>all</em> variance; EFA models only the <em>shared</em> variance <span class="citation" data-cites="Fabrigar1999Evaluating">(<a href="#/references" role="doc-biblioref" onclick>Fabrigar et al., 1999</a>)</span></li>
 </ul>
 <aside class="notes">
-<p>Explain loading as “correlation between item and factor”. Communality h2 = share of an item explained by the factors. The idea goes back to Spearman (1904), who explained school grades with one general intelligence factor.</p>
+<p>A loading shows how strongly an item is related to a factor. In an orthogonal solution it equals the correlation; after an oblique rotation like oblimin it is a regression-like weight (pattern loading). Communality h2 = share of an item explained by the factors (for standardized items). The idea goes back to Spearman (1904), who explained school grades with one general intelligence factor.</p>
 <style type="text/css">
 span.MJX_Assistive_MathML {
 position:absolute!important;
@@ -1331,14 +1332,14 @@ display:block!important;
 <section id="workflow-in-six-steps" class="slide level2">
 <h2>Workflow in six steps</h2>
 <ol type="1">
-<li><strong>Check data</strong>: same scale, n ≥ 100–200</li>
+<li><strong>Check data</strong>: size, missing values, n ≥ 100–200</li>
 <li><strong>Suitability</strong>: KMO &gt; 0.6, Bartlett’s test significant</li>
 <li><strong>How many factors?</strong> Parallel analysis <span class="citation" data-cites="Horn1965Rationale">(<a href="#/references" role="doc-biblioref" onclick>Horn, 1965</a>)</span></li>
 <li><strong>Extract &amp; rotate</strong>: ML + oblimin (factors may correlate)</li>
-<li><strong>Interpret &amp; name</strong> the factors (loadings &gt; 0.4)</li>
+<li><strong>Interpret &amp; name</strong> the factors (loadings &gt; 0.3–0.4)</li>
 <li><strong>Use</strong> the results: reliability, factor scores → decisions</li>
 </ol>
-<p>All with one package: <code>psych</code> <span class="citation" data-cites="Revelle2026psych">(<a href="#/references" role="doc-biblioref" onclick>Revelle, 2026</a>)</span></p>
+<p>Thresholds are <strong>rules of thumb</strong>, not strict laws · all in R package <code>psych</code> <span class="citation" data-cites="Revelle2026psych">(<a href="#/references" role="doc-biblioref" onclick>Revelle, 2026</a>)</span></p>
 </section>
 <section id="step-12-is-the-data-suitable" class="slide level2">
 <h2>Step 1–2: Is the data suitable?</h2>
@@ -1346,17 +1347,24 @@ display:block!important;
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(psych)</span>
 <span id="cb1-2"><a href aria-hidden="true" tabindex="-1"></a>survey <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;data/customer_survey.csv&quot;</span>)</span>
 <span id="cb1-3"><a href aria-hidden="true" tabindex="-1"></a>items  <span class="ot">&lt;-</span> survey[, <span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>]          <span class="co"># the 12 rating items</span></span>
-<span id="cb1-4"><a href aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">KMO</span>(items)<span class="sc">$</span>MSA                    <span class="co"># &gt; 0.6 is acceptable</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-4"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(items)                        <span class="co"># 400 customers, 12 items</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 400  12</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(<span class="fu">is.na</span>(items))                 <span class="co"># no missing values</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">KMO</span>(items)<span class="sc">$</span>MSA                    <span class="co"># rule of thumb: &gt; 0.6</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0.7901796</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">cortest.bartlett</span>(<span class="fu">cor</span>(items), <span class="at">n =</span> <span class="fu">nrow</span>(items))<span class="sc">$</span>p.value</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">cortest.bartlett</span>(<span class="fu">cor</span>(items), <span class="at">n =</span> <span class="fu">nrow</span>(items))<span class="sc">$</span>p.value</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 4.905772e-257</code></pre>
 </div>
 </div>
-<p>✅ KMO ≈ 0.79 (good) and Bartlett’s <em>p</em> &lt; .001 → items are correlated enough.</p>
+<p>✅ KMO ≈ 0.79 (above 0.6) and Bartlett’s <em>p</em> &lt; .001 → items are correlated enough.</p>
 <aside class="notes">
 <p>KMO compares correlations with partial correlations. Bartlett tests whether the correlation matrix is different from an identity matrix (no correlations). Both are fine here.</p>
 <style type="text/css">
@@ -1374,8 +1382,8 @@ display:block!important;
 <section id="step-3-how-many-factors" class="slide level2">
 <h2>Step 3: How many factors?</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
-<span id="cb5-2"><a href aria-hidden="true" tabindex="-1"></a>pa <span class="ot">&lt;-</span> <span class="fu">fa.parallel</span>(items, <span class="at">fa =</span> <span class="st">&quot;fa&quot;</span>, <span class="at">main =</span> <span class="st">&quot;Parallel analysis&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb9-2"><a href aria-hidden="true" tabindex="-1"></a>pa <span class="ot">&lt;-</span> <span class="fu">fa.parallel</span>(items, <span class="at">fa =</span> <span class="st">&quot;fa&quot;</span>, <span class="at">main =</span> <span class="st">&quot;Parallel analysis&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure>
@@ -1405,10 +1413,10 @@ display:block!important;
 <section id="step-4-extract-and-rotate" class="slide level2">
 <h2>Step 4: Extract and rotate</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">fa</span>(items, <span class="at">nfactors =</span> <span class="dv">3</span>, <span class="at">rotate =</span> <span class="st">&quot;oblimin&quot;</span>, <span class="at">fm =</span> <span class="st">&quot;ml&quot;</span>)</span>
-<span id="cb7-2"><a href aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="fu">unclass</span>(<span class="fu">fa.sort</span>(fit)<span class="sc">$</span>loadings)       <span class="co"># sorted loadings</span></span>
-<span id="cb7-3"><a href aria-hidden="true" tabindex="-1"></a>L[<span class="fu">abs</span>(L) <span class="sc">&lt;</span> <span class="fl">0.3</span>] <span class="ot">&lt;-</span> <span class="cn">NA</span>                     <span class="co"># hide small loadings</span></span>
-<span id="cb7-4"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(L, <span class="dv">2</span>), <span class="at">na.print =</span> <span class="st">&quot;&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">fa</span>(items, <span class="at">nfactors =</span> <span class="dv">3</span>, <span class="at">rotate =</span> <span class="st">&quot;oblimin&quot;</span>, <span class="at">fm =</span> <span class="st">&quot;ml&quot;</span>)</span>
+<span id="cb11-2"><a href aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="fu">unclass</span>(<span class="fu">fa.sort</span>(fit)<span class="sc">$</span>loadings)       <span class="co"># sorted loadings</span></span>
+<span id="cb11-3"><a href aria-hidden="true" tabindex="-1"></a>L[<span class="fu">abs</span>(L) <span class="sc">&lt;</span> <span class="fl">0.3</span>] <span class="ot">&lt;-</span> <span class="cn">NA</span>                     <span class="co"># hide small loadings</span></span>
+<span id="cb11-4"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">round</span>(L, <span class="dv">2</span>), <span class="at">na.print =</span> <span class="st">&quot;&quot;</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                     ML1  ML3  ML2
 price_fair          0.82          
@@ -1439,6 +1447,42 @@ overflow: hidden!important;
 display:block!important;
 }</style></aside>
 </section>
+<section id="robustness-is-ml-okay-for-likert-items" class="slide level2">
+<h2>Robustness: is ML okay for Likert items?</h2>
+<p>Likert items are ordinal → check with <strong>principal axis</strong> and <strong>polychoric</strong> correlations:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href aria-hidden="true" tabindex="-1"></a>fit_pa   <span class="ot">&lt;-</span> <span class="fu">fa</span>(items, <span class="at">nfactors =</span> <span class="dv">3</span>, <span class="at">rotate =</span> <span class="st">&quot;oblimin&quot;</span>, <span class="at">fm =</span> <span class="st">&quot;pa&quot;</span>)</span>
+<span id="cb13-2"><a href aria-hidden="true" tabindex="-1"></a>fit_poly <span class="ot">&lt;-</span> <span class="fu">fa</span>(items, <span class="at">nfactors =</span> <span class="dv">3</span>, <span class="at">rotate =</span> <span class="st">&quot;oblimin&quot;</span>, <span class="at">cor =</span> <span class="st">&quot;poly&quot;</span>)</span>
+<span id="cb13-3"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">factor.congruence</span>(fit, fit_pa), <span class="dv">2</span>)     <span class="co"># 1 = identical factor</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    PA3  PA1  PA2
+ML1   1 0.00 0.00
+ML3   0 1.00 0.02
+ML2   0 0.02 1.00</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">factor.congruence</span>(fit, fit_poly), <span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      MR3  MR1  MR2
+ML1  1.00 0.00 0.00
+ML3 -0.01 1.00 0.02
+ML2  0.00 0.02 1.00</code></pre>
+</div>
+</div>
+<p>Congruence ≈ 1.00 → the <strong>same three factors</strong> with every method → results are robust.</p>
+<aside class="notes">
+<p>Maximum likelihood assumes roughly normal, continuous data. Our items are 7-point Likert items, which are ordinal. So I checked: with principal axis factoring and with polychoric correlations, Tucker’s congruence is about 1.00 for each factor, the largest loading difference is only 0.03. The order of the columns may differ, but each factor finds its twin.</p>
+<style type="text/css">
+span.MJX_Assistive_MathML {
+position:absolute!important;
+clip: rect(1px, 1px, 1px, 1px);
+padding: 1px 0 0 0!important;
+border: 0!important;
+height: 1px!important;
+width: 1px!important;
+overflow: hidden!important;
+display:block!important;
+}</style></aside>
+</section>
 <section id="step-5-interpret-and-name" class="slide level2">
 <h2>Step 5: Interpret and name</h2>
 <div class="cell">
@@ -1455,25 +1499,26 @@ display:block!important;
 <section id="step-6-from-factors-to-a-decision" class="slide level2">
 <h2>Step 6: From factors to a decision</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="fu">unclass</span>(fit<span class="sc">$</span>loadings)</span>
-<span id="cb9-2"><a href aria-hidden="true" tabindex="-1"></a>markers <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">Product =</span> <span class="st">&quot;quality&quot;</span>, <span class="at">Service =</span> <span class="st">&quot;support&quot;</span>, <span class="at">Price =</span> <span class="st">&quot;price_fair&quot;</span>)</span>
-<span id="cb9-3"><a href aria-hidden="true" tabindex="-1"></a>scores <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(fit<span class="sc">$</span>scores)</span>
-<span id="cb9-4"><a href aria-hidden="true" tabindex="-1"></a><span class="co"># name each factor after its clearest item (step 5)</span></span>
-<span id="cb9-5"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(scores) <span class="ot">&lt;-</span> <span class="fu">names</span>(markers)[<span class="fu">apply</span>(<span class="fu">abs</span>(L[markers, <span class="fu">colnames</span>(scores)]), <span class="dv">2</span>, which.max)]</span>
-<span id="cb9-6"><a href aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">lm</span>(survey<span class="sc">$</span>satisfaction <span class="sc">~</span> Product <span class="sc">+</span> Service <span class="sc">+</span> Price, <span class="at">data =</span> scores)</span>
-<span id="cb9-7"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">round</span>(<span class="fu">summary</span>(model)<span class="sc">$</span>coefficients, <span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href aria-hidden="true" tabindex="-1"></a>L <span class="ot">&lt;-</span> <span class="fu">unclass</span>(fit<span class="sc">$</span>loadings)</span>
+<span id="cb17-2"><a href aria-hidden="true" tabindex="-1"></a>markers <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">Product =</span> <span class="st">&quot;quality&quot;</span>, <span class="at">Service =</span> <span class="st">&quot;support&quot;</span>, <span class="at">Price =</span> <span class="st">&quot;price_fair&quot;</span>)</span>
+<span id="cb17-3"><a href aria-hidden="true" tabindex="-1"></a>scores <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(fit<span class="sc">$</span>scores)</span>
+<span id="cb17-4"><a href aria-hidden="true" tabindex="-1"></a><span class="co"># name each factor after its clearest item (step 5)</span></span>
+<span id="cb17-5"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(scores) <span class="ot">&lt;-</span> <span class="fu">names</span>(markers)[<span class="fu">apply</span>(<span class="fu">abs</span>(L[markers, <span class="fu">colnames</span>(scores)]), <span class="dv">2</span>, which.max)]</span>
+<span id="cb17-6"><a href aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">lm</span>(survey<span class="sc">$</span>satisfaction <span class="sc">~</span> Product <span class="sc">+</span> Service <span class="sc">+</span> Price, <span class="at">data =</span> scores)</span>
+<span id="cb17-7"><a href aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> <span class="fu">summary</span>(model)<span class="sc">$</span>coefficients</span>
+<span id="cb17-8"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">data.frame</span>(<span class="at">b =</span> <span class="fu">round</span>(res[, <span class="dv">1</span>], <span class="dv">2</span>), <span class="at">p =</span> <span class="fu">format.pval</span>(res[, <span class="dv">4</span>], <span class="at">eps =</span> <span class="fl">0.001</span>, <span class="at">digits =</span> <span class="dv">2</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>            Estimate Std. Error t value Pr(&gt;|t|)
-(Intercept)    6.055      0.060 100.599    0.000
-Product        0.393      0.071   5.559    0.000
-Service        0.893      0.072  12.453    0.000
-Price          0.172      0.069   2.473    0.014</code></pre>
+<pre><code>               b      p
+(Intercept) 6.05 &lt;0.001
+Product     0.39 &lt;0.001
+Service     0.89 &lt;0.001
+Price       0.17  0.014</code></pre>
 </div>
 </div>
 <div class="fragment">
-<p><strong>Decision:</strong> Service has the largest effect on satisfaction → invest in <strong>delivery, support, and returns</strong>, not in further price cuts.</p>
+<p><strong>Result:</strong> Service is most strongly <strong>associated</strong> with satisfaction (simulated, cross-sectional data → not proof of causality). <strong>Recommendation:</strong> prioritise <strong>delivery, support, returns</strong> and test the effect in a pilot before investing.</p>
 <aside class="notes">
-<p>Factor scores give every customer one value per factor. Regressing satisfaction on them shows which driver matters most. This is how factor analysis supports business decisions. The scores could also be used for customer segmentation (cluster analysis).</p>
+<p>Factor scores give every customer one value per factor. Regressing satisfaction on them shows which driver is most strongly associated with satisfaction. Careful: this is an association in simulated, cross-sectional data, not a proven causal effect. A real company should test it, e.g. with a pilot or A/B test. This is how factor analysis supports business decisions. The scores could also be used for customer segmentation (cluster analysis).</p>
 <style type="text/css">
 span.MJX_Assistive_MathML {
 position:absolute!important;
@@ -1505,9 +1550,9 @@ display:block!important;
 <h2>Exercise (≈ 15 minutes)</h2>
 <p>The data set <code>bfi</code> in <code>psych</code> contains <strong>25 personality items</strong> from 2,800 people <span class="citation" data-cites="Goldberg1999Broad">(<a href="#/references" role="doc-biblioref" onclick>Goldberg, 1999</a>)</span>.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">&quot;psych&quot;</span>, <span class="st">&quot;GPArotation&quot;</span>))   <span class="co"># only once</span></span>
-<span id="cb11-2"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(psych)</span>
-<span id="cb11-3"><a href aria-hidden="true" tabindex="-1"></a>big5 <span class="ot">&lt;-</span> bfi[, <span class="dv">1</span><span class="sc">:</span><span class="dv">25</span>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">&quot;psych&quot;</span>, <span class="st">&quot;GPArotation&quot;</span>))   <span class="co"># only once</span></span>
+<span id="cb19-2"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(psych)</span>
+<span id="cb19-3"><a href aria-hidden="true" tabindex="-1"></a>big5 <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(bfi[, <span class="dv">1</span><span class="sc">:</span><span class="dv">25</span>])    <span class="co"># complete answers only (n = 2,436)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <ol type="1">
 <li>Check suitability with <code>KMO()</code> and <code>cortest.bartlett()</code>.</li>
@@ -1517,7 +1562,7 @@ display:block!important;
 <li><strong>Business question:</strong> How could an HR department use these factors?</li>
 </ol>
 <aside class="notes">
-<p>Give students time. Walk around and help. Hint: bfi has missing values; fa() handles them by default (pairwise correlations).</p>
+<p>Give students about 15 minutes. Walk around and help. bfi has missing values in 364 rows; na.omit() keeps the 2,436 complete rows, so the sample size for Bartlett’s test is correct. If install.packages takes long, students can work in pairs.</p>
 <style type="text/css">
 span.MJX_Assistive_MathML {
 position:absolute!important;
@@ -1530,29 +1575,44 @@ overflow: hidden!important;
 display:block!important;
 }</style></aside>
 </section>
-<section id="exercise-solution" class="slide level2">
-<h2>Exercise: solution</h2>
+<section id="exercise-solution-12" class="slide level2">
+<h2>Exercise: solution (1/2)</h2>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href aria-hidden="true" tabindex="-1"></a>big5 <span class="ot">&lt;-</span> bfi[, <span class="dv">1</span><span class="sc">:</span><span class="dv">25</span>]</span>
-<span id="cb12-2"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">KMO</span>(big5)<span class="sc">$</span>MSA</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href aria-hidden="true" tabindex="-1"></a>big5 <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(bfi[, <span class="dv">1</span><span class="sc">:</span><span class="dv">25</span>])</span>
+<span id="cb20-2"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">KMO</span>(big5)<span class="sc">$</span>MSA</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.8458975</code></pre>
+<pre><code>[1] 0.8486452</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">cortest.bartlett</span>(<span class="fu">cor</span>(big5, <span class="at">use =</span> <span class="st">&quot;pairwise&quot;</span>), <span class="at">n =</span> <span class="fu">nrow</span>(big5))<span class="sc">$</span>p.value</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">format.pval</span>(<span class="fu">cortest.bartlett</span>(<span class="fu">cor</span>(big5), <span class="at">n =</span> <span class="fu">nrow</span>(big5))<span class="sc">$</span>p.value, <span class="at">eps =</span> <span class="fl">0.001</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0</code></pre>
+<pre><code>[1] &quot;&lt; 0.001&quot;</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href aria-hidden="true" tabindex="-1"></a>f5 <span class="ot">&lt;-</span> <span class="fu">fa</span>(big5, <span class="at">nfactors =</span> <span class="dv">5</span>, <span class="at">rotate =</span> <span class="st">&quot;oblimin&quot;</span>)</span>
-<span id="cb16-2"><a href aria-hidden="true" tabindex="-1"></a>L5 <span class="ot">&lt;-</span> <span class="fu">unclass</span>(f5<span class="sc">$</span>loadings)</span>
-<span id="cb16-3"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">apply</span>(L5, <span class="dv">2</span>, <span class="cf">function</span>(x) <span class="fu">paste</span>(<span class="fu">rownames</span>(L5)[<span class="fu">abs</span>(x) <span class="sc">&gt;</span> <span class="fl">0.4</span>], <span class="at">collapse =</span> <span class="st">&quot;, &quot;</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1</span>)</span>
+<span id="cb24-2"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">fa.parallel</span>(big5, <span class="at">fa =</span> <span class="st">&quot;fa&quot;</span>, <span class="at">plot =</span> <span class="cn">FALSE</span>)<span class="sc">$</span>nfact</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>                 MR1                  MR4                  MR3 
-&quot;N1, N2, N3, N4, N5&quot; &quot;E1, E2, E3, E4, E5&quot; &quot;C1, C2, C3, C4, C5&quot; 
-                 MR2                  MR5 
-&quot;A1, A2, A3, A4, A5&quot;     &quot;O1, O2, O3, O5&quot; </code></pre>
+<pre><code>Parallel analysis suggests that the number of factors =  6  and the number of components =  NA </code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 6</code></pre>
 </div>
 </div>
-<p><strong>Big Five:</strong> Neuroticism, Conscientiousness, Extraversion, Agreeableness, Openness. Parallel analysis says 6, <strong>theory</strong> says 5.</p>
+<p>Suitable data (KMO ≈ 0.85). Parallel analysis suggests <strong>6</strong> factors, but the 6th contains only the two reverse-worded items O2 and O5 (≈ 3% of variance) → a <strong>wording effect</strong>, not a new trait → theory says <strong>5</strong>.</p>
+</section>
+<section id="exercise-solution-22" class="slide level2">
+<h2>Exercise: solution (2/2)</h2>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href aria-hidden="true" tabindex="-1"></a>f5 <span class="ot">&lt;-</span> <span class="fu">fa</span>(big5, <span class="at">nfactors =</span> <span class="dv">5</span>, <span class="at">rotate =</span> <span class="st">&quot;oblimin&quot;</span>)</span>
+<span id="cb27-2"><a href aria-hidden="true" tabindex="-1"></a>L5 <span class="ot">&lt;-</span> <span class="fu">unclass</span>(f5<span class="sc">$</span>loadings)</span>
+<span id="cb27-3"><a href aria-hidden="true" tabindex="-1"></a><span class="fu">apply</span>(L5, <span class="dv">2</span>, <span class="cf">function</span>(x) <span class="fu">paste</span>(<span class="fu">rownames</span>(L5)[<span class="fu">abs</span>(x) <span class="sc">&gt;</span> <span class="fl">0.4</span>], <span class="at">collapse =</span> <span class="st">&quot;, &quot;</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                     MR3                      MR4                      MR5 
+    &quot;N1, N2, N3, N4, N5&quot; &quot;E1, E2, E3, E4, E5, N4&quot;     &quot;C1, C2, C3, C4, C5&quot; 
+                     MR1                      MR2 
+    &quot;A1, A2, A3, A4, A5&quot;         &quot;O1, O2, O3, O5&quot; </code></pre>
+</div>
+</div>
+<p><strong>Big Five:</strong> Neuroticism, Extraversion, Conscientiousness, Agreeableness, Openness.</p>
+<p><strong>HR use (example answer):</strong> build balanced teams, plan training and development, design engagement surveys. Not as the only hiring criterion (fairness, data protection).</p>
 </section>
 <section id="key-takeaways" class="slide level2">
 <h2>Key takeaways</h2>
@@ -2664,8 +2724,6 @@ window.QuartoSupport = function () {
 	 * Copyright (C) 2011-2014 Hakim El Hattab, http://hakim.se
 	 */return()=>e}));
 </script>
-  <script>!function(t,e){"object"==typeof exports&&"undefined"!=typeof module?module.exports=e():"function"==typeof define&&define.amd?define(e):(t="undefined"!=typeof globalThis?globalThis:t||self).RevealMath=e()}(this,(function(){"use strict";const t=()=>{let t,e={messageStyle:"none",tex2jax:{inlineMath:[["$","$"],["\\(","\\)"]],skipTags:["script","noscript","style","textarea","pre"]},skipStartupTypeset:!0};return{id:"mathjax2",init:function(n){t=n;let a=t.getConfig().mathjax2||t.getConfig().math||{},i={...e,...a},s=(i.mathjax||"https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js")+"?config="+(i.config||"TeX-AMS_HTML-full");i.tex2jax={...e.tex2jax,...a.tex2jax},i.mathjax=i.config=null,function(t,e){let n=document.querySelector("head"),a=document.createElement("script");a.type="text/javascript",a.src=t;let i=()=>{"function"==typeof e&&(e.call(),e=null)};a.onload=i,a.onreadystatechange=()=>{"loaded"===this.readyState&&i()},n.appendChild(a)}(s,(function(){MathJax.Hub.Config(i),MathJax.Hub.Queue(["Typeset",MathJax.Hub,t.getRevealElement()]),MathJax.Hub.Queue(t.layout),t.on("slidechanged",(function(t){MathJax.Hub.Queue(["Typeset",MathJax.Hub,t.currentSlide])}))}))}}},e=t;return Plugin=Object.assign(e(),{KaTeX:()=>{let t,e={version:"latest",delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredTags:["script","noscript","style","textarea","pre"]};const n=t=>new Promise(((e,n)=>{const a=document.createElement("script");a.type="text/javascript",a.onload=e,a.onerror=n,a.src=t,document.head.append(a)}));return{id:"katex",init:function(a){t=a;let i=t.getConfig().katex||{},s={...e,...i};const{local:o,version:l,extensions:r,...c}=s;let d=s.local||"https://cdn.jsdelivr.net/npm/katex",u=s.local?"":"@"+s.version,p=d+u+"/dist/katex.min.css",h=d+u+"/dist/contrib/mhchem.min.js",x=d+u+"/dist/contrib/auto-render.min.js",m=[d+u+"/dist/katex.min.js"];s.extensions&&s.extensions.includes("mhchem")&&m.push(h),m.push(x);const f=()=>{renderMathInElement(a.getSlidesElement(),c),t.layout()};(t=>{let e=document.createElement("link");e.rel="stylesheet",e.href=t,document.head.appendChild(e)})(p),async function(t){for(const e of t)await n(e)}(m).then((()=>{t.isReady()?f():t.on("ready",f.bind(this))}))}}},MathJax2:t,MathJax3:()=>{let t,e={tex:{inlineMath:[["$","$"],["\\(","\\)"]]},options:{skipHtmlTags:["script","noscript","style","textarea","pre"]},startup:{ready:()=>{MathJax.startup.defaultReady(),MathJax.startup.promise.then((()=>{t.layout()}))}}};return{id:"mathjax3",init:function(n){t=n;let a=t.getConfig().mathjax3||{},i={...e,...a};i.tex={...e.tex,...a.tex},i.options={...e.options,...a.options},i.startup={...e.startup,...a.startup};let s=i.mathjax||"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js";i.mathjax=null,window.MathJax=i,function(t,e){let n=document.createElement("script");n.type="text/javascript",n.id="MathJax-script",n.src=t,n.async=!0,n.onload=()=>{"function"==typeof e&&(e.call(),e=null)},document.head.appendChild(n)}(s,(function(){t.addEventListener("slidechanged",(function(t){MathJax.typeset()}))}))}}}})}));
-</script>
   <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
 
   <script>
@@ -2833,27 +2891,9 @@ window.QuartoSupport = function () {
         // Factor of the display size that should remain empty around the content
         margin: 0.1,
 
-        math: {
-          mathjax: 'https://cdn.jsdelivr.net/npm/mathjax@2.7.9/MathJax.js',
-          config: 'TeX-AMS_HTML-full',
-          tex2jax: {
-            inlineMath: [['\\(','\\)']],
-            displayMath: [['\\[','\\]']],
-            balanceBraces: true,
-            processEscapes: false,
-            processRefs: true,
-            processEnvironments: true,
-            preview: 'TeX',
-            skipTags: ['script','noscript','style','textarea','pre','code'],
-            ignoreClass: 'tex2jax_ignore',
-            processClass: 'tex2jax_process'
-          },
-        },
-
         // reveal.js plugins
         plugins: [QuartoLineHighlight, PdfExport, RevealMenu, QuartoSupport,
 
-          RevealMath,
           RevealNotes,
           RevealSearch,
           RevealZoom

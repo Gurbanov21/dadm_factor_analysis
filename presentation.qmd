@@ -17,6 +17,7 @@ format:
     height: 720
     code-line-numbers: false
     pdf-separate-fragments: false
+    html-math-method: plain
 execute:
   echo: true
   warning: false
@@ -36,7 +37,7 @@ items  <- survey[, 1:12]
 
 ## The business problem
 
-An online shop asks **400 customers** to rate **12 statements** (1 = strongly disagree … 7 = strongly agree):
+An online shop asks **400 customers** to rate **12 statements** (1 = strongly disagree … 7 = strongly agree). *Data are simulated for teaching.*
 
 | Product | Service | Price |
 |---|---|---|
@@ -64,19 +65,19 @@ Start with the story: a company collects survey data but cannot act on twelve se
 - **EFA vs. PCA:** PCA summarises *all* variance; EFA models only the *shared* variance [@Fabrigar1999Evaluating]
 
 ::: notes
-Explain loading as "correlation between item and factor". Communality h2 = share of an item explained by the factors. The idea goes back to Spearman (1904), who explained school grades with one general intelligence factor.
+A loading shows how strongly an item is related to a factor. In an orthogonal solution it equals the correlation; after an oblique rotation like oblimin it is a regression-like weight (pattern loading). Communality h2 = share of an item explained by the factors (for standardized items). The idea goes back to Spearman (1904), who explained school grades with one general intelligence factor.
 :::
 
 ## Workflow in six steps
 
-1. **Check data**: same scale, n ≥ 100–200
+1. **Check data**: size, missing values, n ≥ 100–200
 2. **Suitability**: KMO > 0.6, Bartlett's test significant
 3. **How many factors?** Parallel analysis [@Horn1965Rationale]
 4. **Extract & rotate**: ML + oblimin (factors may correlate)
-5. **Interpret & name** the factors (loadings > 0.4)
+5. **Interpret & name** the factors (loadings > 0.3–0.4)
 6. **Use** the results: reliability, factor scores → decisions
 
-All with one package: `psych` [@Revelle2026psych]
+Thresholds are **rules of thumb**, not strict laws · all in R package `psych` [@Revelle2026psych]
 
 ## Step 1–2: Is the data suitable?
 
@@ -84,12 +85,14 @@ All with one package: `psych` [@Revelle2026psych]
 library(psych)
 survey <- read.csv("data/customer_survey.csv")
 items  <- survey[, 1:12]          # the 12 rating items
+dim(items)                        # 400 customers, 12 items
+sum(is.na(items))                 # no missing values
 
-KMO(items)$MSA                    # > 0.6 is acceptable
+KMO(items)$MSA                    # rule of thumb: > 0.6
 cortest.bartlett(cor(items), n = nrow(items))$p.value
 ```
 
-✅ KMO ≈ 0.79 (good) and Bartlett's *p* < .001 → items are correlated enough.
+✅ KMO ≈ 0.79 (above 0.6) and Bartlett's *p* < .001 → items are correlated enough.
 
 ::: notes
 KMO compares correlations with partial correlations. Bartlett tests whether the correlation matrix is different from an identity matrix (no correlations). Both are fine here.
@@ -121,6 +124,23 @@ print(round(L, 2), na.print = "")
 
 ::: notes
 fm = "ml" is maximum likelihood. Oblimin is an oblique rotation: it allows factors to correlate, which is realistic in business. Every item loads on exactly one factor - a clean structure.
+:::
+
+## Robustness: is ML okay for Likert items?
+
+Likert items are ordinal → check with **principal axis** and **polychoric** correlations:
+
+```{r}
+fit_pa   <- fa(items, nfactors = 3, rotate = "oblimin", fm = "pa")
+fit_poly <- fa(items, nfactors = 3, rotate = "oblimin", cor = "poly")
+round(factor.congruence(fit, fit_pa), 2)     # 1 = identical factor
+round(factor.congruence(fit, fit_poly), 2)
+```
+
+Congruence ≈ 1.00 → the **same three factors** with every method → results are robust.
+
+::: notes
+Maximum likelihood assumes roughly normal, continuous data. Our items are 7-point Likert items, which are ordinal. So I checked: with principal axis factoring and with polychoric correlations, Tucker's congruence is about 1.00 for each factor, the largest loading difference is only 0.03. The order of the columns may differ, but each factor finds its twin.
 :::
 
 ## Step 5: Interpret and name
@@ -159,15 +179,17 @@ scores <- as.data.frame(fit$scores)
 # name each factor after its clearest item (step 5)
 colnames(scores) <- names(markers)[apply(abs(L[markers, colnames(scores)]), 2, which.max)]
 model <- lm(survey$satisfaction ~ Product + Service + Price, data = scores)
-round(summary(model)$coefficients, 3)
+res <- summary(model)$coefficients
+data.frame(b = round(res[, 1], 2), p = format.pval(res[, 4], eps = 0.001, digits = 2))
 ```
 
 . . .
 
-**Decision:** Service has the largest effect on satisfaction → invest in **delivery, support, and returns**, not in further price cuts.
+**Result:** Service is most strongly **associated** with satisfaction (simulated, cross-sectional data → not proof of causality).
+**Recommendation:** prioritise **delivery, support, returns** and test the effect in a pilot before investing.
 
 ::: notes
-Factor scores give every customer one value per factor. Regressing satisfaction on them shows which driver matters most. This is how factor analysis supports business decisions. The scores could also be used for customer segmentation (cluster analysis).
+Factor scores give every customer one value per factor. Regressing satisfaction on them shows which driver is most strongly associated with satisfaction. Careful: this is an association in simulated, cross-sectional data, not a proven causal effect. A real company should test it, e.g. with a pilot or A/B test. This is how factor analysis supports business decisions. The scores could also be used for customer segmentation (cluster analysis).
 :::
 
 ## Where is it used in business?
@@ -190,7 +212,7 @@ The data set `bfi` in `psych` contains **25 personality items** from 2,800 peopl
 #| eval: false
 install.packages(c("psych", "GPArotation"))   # only once
 library(psych)
-big5 <- bfi[, 1:25]
+big5 <- na.omit(bfi[, 1:25])    # complete answers only (n = 2,436)
 ```
 
 1. Check suitability with `KMO()` and `cortest.bartlett()`.
@@ -200,21 +222,32 @@ big5 <- bfi[, 1:25]
 5. **Business question:** How could an HR department use these factors?
 
 ::: notes
-Give students time. Walk around and help. Hint: bfi has missing values; fa() handles them by default (pairwise correlations).
+Give students about 15 minutes. Walk around and help. bfi has missing values in 364 rows; na.omit() keeps the 2,436 complete rows, so the sample size for Bartlett's test is correct. If install.packages takes long, students can work in pairs.
 :::
 
-## Exercise: solution
+## Exercise: solution (1/2)
 
 ```{r}
-big5 <- bfi[, 1:25]
+big5 <- na.omit(bfi[, 1:25])
 KMO(big5)$MSA
-cortest.bartlett(cor(big5, use = "pairwise"), n = nrow(big5))$p.value
+format.pval(cortest.bartlett(cor(big5), n = nrow(big5))$p.value, eps = 0.001)
+set.seed(1)
+fa.parallel(big5, fa = "fa", plot = FALSE)$nfact
+```
+
+Suitable data (KMO ≈ 0.85). Parallel analysis suggests **6** factors, but the 6th contains only the two reverse-worded items O2 and O5 (≈ 3% of variance) → a **wording effect**, not a new trait → theory says **5**.
+
+## Exercise: solution (2/2)
+
+```{r}
 f5 <- fa(big5, nfactors = 5, rotate = "oblimin")
 L5 <- unclass(f5$loadings)
 apply(L5, 2, function(x) paste(rownames(L5)[abs(x) > 0.4], collapse = ", "))
 ```
 
-**Big Five:** Neuroticism, Conscientiousness, Extraversion, Agreeableness, Openness. Parallel analysis says 6, **theory** says 5.
+**Big Five:** Neuroticism, Extraversion, Conscientiousness, Agreeableness, Openness.
+
+**HR use (example answer):** build balanced teams, plan training and development, design engagement surveys. Not as the only hiring criterion (fairness, data protection).
 
 ## Key takeaways
 

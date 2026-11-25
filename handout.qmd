@@ -15,7 +15,7 @@ duedate: December 16, 2026
 date: 2026-12-16
 date-format: long
 
-abstract: "Business surveys often contain many questions that measure only a few underlying ideas, such as product quality, service, or price. Exploratory factor analysis (EFA) reduces many correlated variables to a small number of latent factors that managers can interpret and act upon. This handout complements my presentation. It explains the factor model, gives a step-by-step workflow in R with the psych package, and applies it to a simulated customer satisfaction survey of an online retailer. The analysis identifies three drivers of satisfaction and shows how factor scores can guide decisions about where to invest. The handout closes with common pitfalls and resources for further study."
+abstract: "Business surveys often contain many questions that measure only a few underlying ideas, such as product quality, service, or price. Exploratory factor analysis (EFA) reduces many correlated variables to a small number of latent factors that managers can interpret and act upon. This handout complements my presentation. It explains the factor model, gives a step-by-step workflow in R with the psych package, and applies it to a simulated customer satisfaction survey of an online retailer. The analysis identifies three drivers associated with satisfaction, checks the robustness of the results, and discusses how factor scores can inform decisions. The handout closes with common pitfalls and resources for further study."
 keywords: [exploratory factor analysis, R, psych, customer satisfaction, dimension reduction]
 
 affidavit-place: "Cologne"
@@ -29,6 +29,7 @@ format:
   apaquarto-html:
     embed-resources: true
     toc: true
+    html-math-method: mathml
 
 papersize: a4
 a4paper: true
@@ -74,61 +75,71 @@ alphas <- sapply(list(
   Product = items[, 1:4], Service = items[, 5:8], Price = items[, 9:12]
 ), function(x) alpha(x)$total$raw_alpha)
 
+# Robustness: principal axis factoring and polychoric correlations
+fit_pa   <- fa(items, nfactors = 3, rotate = "oblimin", fm = "pa")
+fit_poly <- fa(items, nfactors = 3, rotate = "oblimin", cor = "poly")
+congruence <- function(a, b) apply(abs(factor.congruence(a, b)), 1, max)
+min_cong <- min(congruence(fit, fit_pa), congruence(fit, fit_poly))
+max_diff <- function(a, b) {
+  a <- unclass(a$loadings); b <- unclass(b$loadings)
+  b <- b[, apply(abs(factor.congruence(a, b)), 1, which.max)]
+  max(abs(abs(a) - abs(b)))
+}
+largest_diff <- max(max_diff(fit, fit_pa), max_diff(fit, fit_poly))
+max_skew <- max(abs(describe(items)$skew))
+
 f2 <- function(x) formatC(x, format = "f", digits = 2)
 ```
 
-Companies collect large amounts of survey data from customers and employees. A typical customer satisfaction questionnaire asks a dozen or more questions, but managers do not want to make twelve separate decisions. They want to know *which few things really matter*. Factor analysis answers this question. It looks at how the answers to many questions move together and summarises them with a small number of unobserved (latent) variables called factors [@Hair2019Multivariate]. The idea goes back to @Spearman1904General, who explained the correlations between school grades with one general intelligence factor. Today the same method is used in marketing, human resources, and finance, for example to build service quality scales such as SERVQUAL [@Parasuraman1988SERVQUAL].
+Managers who collect survey data want to know *which few things really matter*, not to make a separate decision for every question. Factor analysis analyses how the answers to many questions move together and summarises them with a small number of unobserved (latent) variables called factors [@Hair2019Multivariate]. The idea goes back to @Spearman1904General, who explained the correlations between school grades with one general intelligence factor. Today it is used in marketing, human resources, and finance, for example to develop service quality scales such as SERVQUAL [@Parasuraman1988SERVQUAL].
 
-My presentation shows the main idea and a live R example. This handout adds the statistical background, explains the decisions an analyst has to make, reports the full results of the example, and lists resources for further learning. All analyses were done in R [@RCoreTeam2026R] with the packages psych [@Revelle2026psych], GPArotation [@Bernaards2005Gradient], and, for the figures in the presentation, ggplot2 [@Wickham2016ggplot2]. The complete code is in the appendix and in the GitHub repository of this project (<https://github.com/Gurbanov21/dadm_factor_analysis>); slides and handout are published at <https://gurbanov21.github.io/dadm_factor_analysis/>.
+While my presentation demonstrates the main idea with live R code, this handout adds the statistical background, the decisions an analyst has to make, a robustness check, and further resources. All analyses were done in R [@RCoreTeam2026R] with the packages psych [@Revelle2026psych] and GPArotation [@Bernaards2005Gradient]; the figures in the slides use ggplot2 [@Wickham2016ggplot2]. Code, data, and slides are available at <https://github.com/Gurbanov21/dadm_factor_analysis> and <https://gurbanov21.github.io/dadm_factor_analysis/>.
 
 # The Factor Model
 
 ## Basic Idea
 
-Exploratory factor analysis assumes that each observed variable $x_j$ is a weighted combination of a few common factors plus a part that is unique to that variable:
+Exploratory factor analysis (EFA) assumes that each observed variable $x_j$ is a weighted combination of a few common factors plus a part that is unique to that variable:
 
 $$
 x_j = \lambda_{j1} F_1 + \lambda_{j2} F_2 + \dots + \lambda_{jm} F_m + \varepsilon_j
 $$
 
-The weights $\lambda_{jk}$ are called *factor loadings*. A loading shows how strongly a variable is related to a factor and can be read like a correlation. The share of a variable's variance that is explained by all common factors is its *communality* ($h^2$); the rest is its *uniqueness* ($u^2 = 1 - h^2$). Because the factors are not observed, they have to be estimated from the correlation matrix of the variables. If several items are highly correlated with each other but only weakly with the rest, they probably measure the same factor.
+The weights $\lambda_{jk}$ are called *factor loadings*. In an orthogonal solution, a loading equals the correlation between an item and a factor. After an oblique rotation such as oblimin, the reported *pattern* loadings are regression-like weights, and the item–factor correlations are given in the *structure* matrix. For standardized variables, the variance of each item splits into its *communality* ($h^2$), the part explained by the common factors, and its *uniqueness* ($u^2 = 1 - h^2$). The factors are estimated from the correlation matrix: items that correlate highly with each other, but weakly with the rest, probably measure the same factor.
 
 ## Factor Analysis, PCA, and CFA
 
-Three related methods are often confused. *Principal component analysis* (PCA) is a pure data reduction technique: it builds components that explain as much *total* variance as possible and does not separate common from unique variance. *Exploratory factor analysis* models only the *shared* variance and assumes that latent constructs cause the answers. @Fabrigar1999Evaluating therefore recommend EFA, not PCA, when the goal is to understand underlying constructs. *Confirmatory factor analysis* (CFA) tests a structure that the researcher specifies in advance, for example with the R package lavaan. In practice, EFA is used to discover a structure and CFA is used later, on new data, to confirm it.
+*Principal component analysis* (PCA) summarises the *total* variance and does not separate common from unique variance. EFA models only the *shared* variance and assumes that latent constructs cause the answers; @Fabrigar1999Evaluating therefore recommend EFA when the goal is to understand underlying constructs. *Confirmatory factor analysis* (CFA), for example with the R package lavaan, tests a structure that is specified in advance. Typically, EFA discovers a structure and CFA later confirms it on new data.
 
 # A Step-by-Step Workflow in R
 
-The workflow below follows the recommendations of @Costello2005Best and @Hair2019Multivariate. Each step requires a decision that should be reported.
+The workflow follows @Costello2005Best and @Hair2019Multivariate. The thresholds below are common rules of thumb, not strict requirements, and every decision should be reported.
 
-**Step 1: Check the data.** Factor analysis needs metric or at least ordinal variables measured on the same scale, such as 7-point Likert items. A common rule of thumb is a sample of at least 100–200 observations and five to ten observations per variable [@Hair2019Multivariate]. Items that are reverse-worded must be recoded first.
+**Step 1: Check the data.** EFA works with correlations, so the items do not need to share the same scale, but they should be metric or ordinal with enough categories, such as 7-point Likert items. Rules of thumb are at least 100–200 observations and five to ten observations per variable [@Hair2019Multivariate]. The size, value ranges, and missing values should be checked first (`dim()`, `summary()`, `colSums(is.na())`), and reverse-worded items recoded.
 
-**Step 2: Check suitability.** The variables must be sufficiently correlated. The Kaiser-Meyer-Olkin measure (KMO) compares correlations with partial correlations; values above 0.60 are acceptable and values above 0.80 are good [@Kaiser1974Index]. Bartlett's test of sphericity checks whether the correlation matrix differs from an identity matrix; it should be significant. In R: `KMO(items)` and `cortest.bartlett(cor(items), n = nrow(items))`.
+**Step 2: Check suitability.** The Kaiser-Meyer-Olkin measure (KMO) compares correlations with partial correlations. @Kaiser1974Index called values in the 0.60s "mediocre" and values in the 0.80s "meritorious"; 0.60 is a common minimum [see also @KaiserRice1974Little]. Bartlett's test checks whether the correlation matrix differs from an identity matrix and should be significant. In R: `KMO()` and `cortest.bartlett()`.
 
-**Step 3: Decide how many factors to extract.** This is the most important decision. The old Kaiser criterion (eigenvalues greater than one) often extracts too many factors. The scree plot [@Cattell1966Scree] looks for the "elbow" where the eigenvalues level off. The most reliable method is *parallel analysis* [@Horn1965Rationale], which compares the eigenvalues of the real data with those of random data of the same size: only factors whose eigenvalue is larger than the random one are kept. In R: `fa.parallel(items, fa = "fa")`. Theory and interpretability should also be considered.
+**Step 3: Decide how many factors to extract.** This is the most important decision. The Kaiser criterion (eigenvalues greater than one) often retains too many factors [@Costello2005Best], and the scree plot [@Cattell1966Scree] is subjective. *Parallel analysis* [@Horn1965Rationale] keeps only factors whose eigenvalues exceed those of random data of the same size and is recommended over these older rules [@Fabrigar1999Evaluating]. Its result should still be combined with theory and interpretability. In R: `fa.parallel()`.
 
-**Step 4: Extract and rotate.** Maximum likelihood (`fm = "ml"`) is a good default when data are roughly normal; principal axis factoring (`fm = "pa"`) is more robust otherwise. The first solution is hard to interpret, so it is rotated. *Varimax* is an orthogonal rotation that keeps factors uncorrelated. *Oblimin* is an oblique rotation that allows correlated factors. Since business constructs such as product and service quality are usually related, an oblique rotation is normally more realistic [@Fabrigar1999Evaluating]. In R: `fa(items, nfactors = 3, rotate = "oblimin", fm = "ml")`.
+**Step 4: Extract and rotate.** Maximum likelihood (`fm = "ml"`) provides fit indices and works well when the data are approximately normal; principal axis factoring (`fm = "pa"`) makes fewer assumptions [@Fabrigar1999Evaluating]. Because Likert items are ordinal, results can be checked with polychoric correlations (`cor = "poly"`). Rotation makes the solution interpretable: *varimax* keeps the factors uncorrelated, whereas *oblimin* allows correlated factors, which is usually more realistic for business constructs [@Fabrigar1999Evaluating].
 
-**Step 5: Interpret and name the factors.** Look at which items load strongly (usually above 0.40) on each factor and give the factor a meaningful name. Items with high loadings on two factors (cross-loadings) or no high loading at all are candidates for removal.
+**Step 5: Interpret and name the factors.** Look at the items with high loadings on each factor (common cut-offs lie between 0.30 and 0.40; @Hair2019Multivariate) and give the factor a meaningful name. Items with cross-loadings or no high loading are candidates for removal.
 
-**Step 6: Check reliability and use the results.** Cronbach's alpha (`alpha()`) should be above 0.70 for each group of items. Finally, factor scores can be saved for each respondent and used in further analyses, for example in a regression or a cluster analysis.
+**Step 6: Check reliability and use the results.** A Cronbach's alpha (`alpha()`) of 0.70 or higher is a common benchmark [@Hair2019Multivariate]. Factor scores can then be used in further analyses, such as a regression or a cluster analysis.
 
 # Business Example: What Drives Customer Satisfaction?
 
 ## Data
 
-An online retailer surveyed `r nrow(survey)` customers. They rated twelve statements on a scale from 1 (strongly disagree) to 7 (strongly agree), for example "The products are of high quality" (`quality`), "Customer support is friendly and helpful" (`support`), and "Prices are fair" (`price_fair`). They also rated their overall satisfaction from 1 to 10. The data are simulated for teaching purposes with a known structure, so that the results can be checked; the code that creates them is part of the repository.
+An online retailer surveyed `r nrow(survey)` customers on twelve statements (1 = strongly disagree, 7 = strongly agree), for example "The products are of high quality" (`quality`) or "Customer support is friendly and helpful" (`support`), and on overall satisfaction (1–10). The data are **simulated** for teaching purposes with a known three-factor structure, so that the results can be checked; the code that creates them is part of the repository. There are `r sum(is.na(survey))` missing values.
 
 ## Results
 
-The data are well suited for factor analysis: KMO = `r f2(kmo$MSA)`, and Bartlett's test is significant, $\chi^2$(`r bart$df`) = `r round(bart$chisq, 1)`, *p* < .001. Parallel analysis suggests `r pa$nfact` factors: only the first three observed eigenvalues (`r paste(f2(pa$fa.values[1:3]), collapse = ", ")`) are larger than those of random data (see the scree plot in the presentation). A three-factor maximum likelihood solution with oblimin rotation fits the data very well (TLI = `r f2(fit$TLI)`, RMSEA = `r f2(fit$RMSEA[1])`) and explains `r round(100 * sum(fit$Vaccounted[2, ]))`% of the variance of the items.
-
-
-@tbl-loadings shows the rotated loadings. Each item loads clearly on exactly one factor, and there are no cross-loadings above 0.30. The factors can be named *Product* (quality, durability, design, variety), *Service* (delivery, support, returns, communication), and *Price* (price fairness, discounts, value for money, cheaper than rivals). All three scales are reliable (Cronbach's $\alpha$ = `r f2(alphas["Product"])`, `r f2(alphas["Service"])`, and `r f2(alphas["Price"])`). The factors are only weakly correlated (*r* between `r f2(min(fit$Phi[lower.tri(fit$Phi)]))` and `r f2(max(fit$Phi[lower.tri(fit$Phi)]))`), which supports the oblique rotation.
+The data are suitable for factor analysis: KMO = `r f2(kmo$MSA)`, above the common minimum, and Bartlett's test is significant, $\chi^2$(`r bart$df`) = `r round(bart$chisq, 1)`, *p* < .001. Parallel analysis suggests `r pa$nfact` factors: only the first three observed eigenvalues (`r paste(f2(pa$fa.values[1:3]), collapse = ", ")`) exceed those of random data. The three-factor maximum likelihood solution with oblimin rotation fits well (TLI = `r f2(fit$TLI)`, RMSEA = `r f2(fit$RMSEA[1])`) and explains `r round(100 * sum(fit$Vaccounted[2, ]))`% of the item variance. @tbl-loadings shows that each item loads clearly on one factor, with no cross-loadings above 0.30. The factors can be named *Product*, *Service*, and *Price*. Their scales are reliable (Cronbach's $\alpha$ = `r f2(alphas["Product"])`, `r f2(alphas["Service"])`, and `r f2(alphas["Price"])`), and the factors are only weakly correlated (*r* between `r f2(min(fit$Phi[lower.tri(fit$Phi)]))` and `r f2(max(fit$Phi[lower.tri(fit$Phi)]))`).
 
 ```{r}
 #| label: tbl-loadings
-#| tbl-cap: "Rotated Factor Loadings (Maximum Likelihood, Oblimin)"
+#| tbl-cap: "Rotated Pattern Loadings (Maximum Likelihood, Oblimin)"
 #| apa-note: "Loadings below |0.30| are omitted. h² = communality."
 tab <- L[, c("Product", "Service", "Price")]
 tab_print <- ifelse(abs(tab) < .30, "", f2(tab))
@@ -137,67 +148,32 @@ tab_print <- data.frame(Item = rownames(tab), tab_print, `h²` = f2(fit$communal
 knitr::kable(tab_print, align = "lrrrr")
 ```
 
+Because Likert items are ordinal, I repeated the analysis with principal axis factoring and with polychoric correlations. Both gave practically the same factors (Tucker congruence ≥ `r f2(floor(min_cong * 100) / 100)`; largest loading difference `r f2(largest_diff)`), and the item distributions are nearly symmetric (|skew| ≤ `r f2(max_skew)`). The maximum likelihood results are therefore robust.
+
 ## From Factors to Decisions
 
-Twelve items are now summarised by three factor scores per customer. Regressing overall satisfaction on these scores shows how important each driver is. The effect of *Service* (*b* = `r f2(coefs["Service", 1])`) is about `r round(coefs["Service", 1] / coefs["Product", 1])` times larger than the effect of *Product* (*b* = `r f2(coefs["Product", 1])`), and *Price* has the smallest effect (*b* = `r f2(coefs["Price", 1])`). All three effects are statistically significant. For management, the conclusion is clear: investing in faster delivery, better support, and easier returns will raise satisfaction more than further price cuts. The same factor scores could also be used to segment customers, for example into price-sensitive and service-oriented groups, which links factor analysis to cluster analysis.
+Regressing overall satisfaction on the three factor scores shows how strongly each driver is associated with satisfaction. *Service* has the largest coefficient (*b* = `r f2(coefs["Service", 1])`), about twice that of *Product* (*b* = `r f2(coefs["Product", 1])`), while *Price* has the smallest (*b* = `r f2(coefs["Price", 1])`); all three are statistically significant. Because the data are simulated and cross-sectional, these are associations, not proven causal effects. For a real company, the result would point to service (delivery, support, returns) as the most promising lever, which should then be tested, for example in a pilot study, before large investments are made. The factor scores could also be used for customer segmentation (cluster analysis).
 
 # Pitfalls and Good Practice
 
 - **Garbage in, garbage out.** Factor analysis can only find constructs that the questions measure; good questionnaire design matters more than the method.
-- **Do not rely on the Kaiser criterion alone.** Use parallel analysis and theory together [@Costello2005Best].
-- **Report every decision.** Extraction method, rotation, number of factors, and removed items should be stated so that results are reproducible. Quarto makes this easy because text, code, and results are in one document.
-- **Exploration is not confirmation.** Factor names are interpretations, and a structure found with EFA should be confirmed with CFA on a new sample before important decisions are based on it.
+- **Exploration is not confirmation.** Factor names are interpretations; a structure found with EFA should be confirmed with CFA on new data before important decisions are based on it.
+- **Reproducibility.** Quarto keeps text, code, and results in one document, so every analytical decision is documented.
 
 # Further Resources
 
-- @Hair2019Multivariate, chapter 3, is a clear textbook introduction from a business perspective.
-- @Costello2005Best give four short, practical recommendations and are a good first read.
-- The psych package vignette "An introduction to the psych package" by William Revelle (`vignette("intro", package = "psych")`) explains all functions used here.
-- @Wickham2025R is the standard introduction to data preparation in R and helps with cleaning survey data before the analysis.
-- For practice, the `bfi` data set in psych contains 25 personality items from 2,800 people [@Goldberg1999Broad]. It is used in the exercise of my presentation.
+- @Hair2019Multivariate, chapter 3, gives a business-oriented textbook introduction; @Costello2005Best offer four short, practical recommendations.
+- The vignette "An introduction to the psych package" (`vignette("intro", package = "psych")`) explains all functions used here.
+- For practice, the `bfi` data set in psych contains 25 personality items from 2,800 people [@Goldberg1999Broad]; it is used in the exercise of my presentation.
 
 # References {.unnumbered}
 
 ::: {#refs}
 :::
 
-# R Code {#sec-code .unnumbered}
-
-The following code reproduces all results of this handout. The data set `customer_survey.csv` is created by `data/make_data.R` in the repository.
-
-```{r}
-#| label: code-appendix
-#| echo: true
-#| eval: false
-library(psych)
-survey <- read.csv("data/customer_survey.csv")
-items  <- survey[, 1:12]
-
-# Step 2: suitability
-KMO(items)
-cortest.bartlett(cor(items), n = nrow(items))
-
-# Step 3: number of factors
-set.seed(1)
-fa.parallel(items, fa = "fa")
-
-# Step 4: extraction and rotation
-fit <- fa(items, nfactors = 3, rotate = "oblimin", fm = "ml")
-print(fit$loadings, cutoff = 0.30, sort = TRUE)
-
-# Step 6: reliability and factor scores
-alpha(items[, 1:4])   # Product
-alpha(items[, 5:8])   # Service
-alpha(items[, 9:12])  # Price
-# name each factor after its clearest item (labels ML1-ML3 can change)
-L <- unclass(fit$loadings)
-markers <- c(Product = "quality", Service = "support", Price = "price_fair")
-scores <- as.data.frame(fit$scores)
-colnames(scores) <- names(markers)[apply(abs(L[markers, colnames(scores)]), 2, which.max)]
-summary(lm(survey$satisfaction ~ Product + Service + Price, data = scores))
-```
-
 {{< pagebreak >}}
+
+**Use of generative AI.** The text, R code, and Quarto files of this submission were drafted with the assistance of the generative AI tool Claude [@Anthropic2026Claude]. Whether and how this use is permitted under the course and university rules has to be confirmed by the author before the Affidavit below is signed.
 
 ::: {.callout-tip appearance="default" title="Affidavit" icon=false}
 I hereby affirm that this submitted paper was authored unaided and solely by me. Additionally, no other sources than those in the reference list were used. Parts of this paper, including tables and figures, that have been taken either verbatim or analogously from other works have in each case been properly cited with regard to their origin and authorship. This paper either in parts or in its entirety, be it in the same or similar form, has not been submitted to any other examination board and has not been published.
@@ -216,7 +192,7 @@ Checklist:
 - [x] The title page of my presentation and handout contain personal details (name, email, matriculation number).
 - [x] My handout contains a bibliography, created using BibTeX with an APA citation style.
 - [x] Either the handout or the presentation contains R code that verifies my expertise in coding.
-- [x] The Affidavit is filled out correctly.
+- [ ] The Affidavit is filled out correctly.
 - [x] The PDF and HTML files of the presentation and the handout are published on GitHub Pages.
 - [x] I submitted a pull request to the repository [https://github.com/hubchev/make_a_pull_request](https://github.com/hubchev/make_a_pull_request), where I added my GitHub username and the repository related to this submission to the file [https://github.com/hubchev/make_a_pull_request/dadm_ws26.md](https://github.com/hubchev/make_a_pull_request/dadm_ws26.md).
 
