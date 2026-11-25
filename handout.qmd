@@ -79,7 +79,7 @@ f2 <- function(x) formatC(x, format = "f", digits = 2)
 
 Companies collect large amounts of survey data from customers and employees. A typical customer satisfaction questionnaire asks a dozen or more questions, but managers do not want to make twelve separate decisions. They want to know *which few things really matter*. Factor analysis answers this question. It looks at how the answers to many questions move together and summarises them with a small number of unobserved (latent) variables called factors [@Hair2019Multivariate]. The idea goes back to @Spearman1904General, who explained the correlations between school grades with one general intelligence factor. Today the same method is used in marketing, human resources, and finance, for example to build service quality scales such as SERVQUAL [@Parasuraman1988SERVQUAL].
 
-My presentation shows the main idea and a live R example. This handout adds the statistical background, explains the decisions an analyst has to make, reports the full results of the example, and lists resources for further learning. All analyses were done in R [@RCoreTeam2026R] with the packages psych [@Revelle2026psych], GPArotation [@Bernaards2005Gradient], and, for the figures in the presentation, ggplot2 [@Wickham2016ggplot2]. The complete code is in the appendix and in the GitHub repository of this project.
+My presentation shows the main idea and a live R example. This handout adds the statistical background, explains the decisions an analyst has to make, reports the full results of the example, and lists resources for further learning. All analyses were done in R [@RCoreTeam2026R] with the packages psych [@Revelle2026psych], GPArotation [@Bernaards2005Gradient], and, for the figures in the presentation, ggplot2 [@Wickham2016ggplot2]. The complete code is in the appendix and in the GitHub repository of this project (<https://github.com/Gurbanov21/dadm_factor_analysis>); slides and handout are published at <https://gurbanov21.github.io/dadm_factor_analysis/>.
 
 # The Factor Model
 
@@ -213,8 +213,8 @@ Checklist:
 - [x] My handout contains a bibliography, created using BibTeX with an APA citation style.
 - [x] Either the handout or the presentation contains R code that verifies my expertise in coding.
 - [x] The Affidavit is filled out correctly.
-- [ ] The PDF and HTML files of the presentation and the handout are published on GitHub Pages.
-- [ ] I submitted a pull request to the repository [https://github.com/hubchev/make_a_pull_request](https://github.com/hubchev/make_a_pull_request), where I added my GitHub username and the repository related to this submission to the file [https://github.com/hubchev/make_a_pull_request/dadm_ws26.md](https://github.com/hubchev/make_a_pull_request/dadm_ws26.md).
+- [x] The PDF and HTML files of the presentation and the handout are published on GitHub Pages.
+- [x] I submitted a pull request to the repository [https://github.com/hubchev/make_a_pull_request](https://github.com/hubchev/make_a_pull_request), where I added my GitHub username and the repository related to this submission to the file [https://github.com/hubchev/make_a_pull_request/dadm_ws26.md](https://github.com/hubchev/make_a_pull_request/dadm_ws26.md).
 
 Amal Gurbanov, December 16, 2026, {{< meta affidavit-place >}}
 :::

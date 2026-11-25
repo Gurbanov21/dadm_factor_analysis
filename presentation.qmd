@@ -217,7 +217,7 @@ apply(L5, 2, function(x) paste(rownames(L5)[abs(x) > 0.4], collapse = ", "))
 - The analyst makes decisions: number of factors, rotation, names; **report them**
 - Business value: focus on the **drivers that matter**
 
-**Handout, slides, and code:** see the GitHub repository of this project.
+**Handout, slides, and code:** <https://gurbanov21.github.io/dadm_factor_analysis/>
 
 ## References
 
