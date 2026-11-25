@@ -4,6 +4,6 @@
 .quarto/
 *_files/
 *_cache/
-*.tex
-*.log
+/*.tex
+/*.log
 Rplots.pdf
